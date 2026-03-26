@@ -785,7 +785,7 @@ html, body {
 <div class="phase" id="phase3">
   <div class="phase-banner banner-ai">
     <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> provisions the test environment</div>
-    <div class="phase-banner-sub">Starting VSR Router, Envoy Proxy, Ollama, and embedding models</div>
+    <div class="phase-banner-sub">Provisioning test environment on OpenShift with GPU scheduling</div>
   </div>
   <div class="phase-content">
     <div class="terminal-full" id="terminal-output"></div>
@@ -1198,7 +1198,7 @@ html, body {
                       btn.textContent = 'Submitted';
                       btn.style.background = '#2ea043';
                       titleEl.innerHTML = title + ' <span class="issue-number">#1448</span>';
-                      schedule(() => runPhase2(), 1440);  // was 1200
+                      schedule(() => runPhase2(), 5040);  // was 1200 + 3600 dwell
                     }, 240);   // was 200
                   }, 720);     // was 600
                 }, 600);       // was 500
@@ -1254,7 +1254,7 @@ html, body {
       }, totalDelay);
     });
 
-    schedule(() => runPhase3(), totalDelay + 1800);  // was 1500
+    schedule(() => runPhase3(), totalDelay + 5400);  // was 1500 + 3600 dwell
   }
 
   // ── Phase 3: Terminal ─────────────────
@@ -1264,16 +1264,14 @@ html, body {
     output.innerHTML = '';
 
     const lines = [
-      { ts: '15:04:01', text: 'Generating VSR config for cache isolation test...', delay: 840 },        // was 700
-      { ts: '15:04:02', text: 'semantic_cache: enabled=true threshold=0.85 embedding_model=qwen3', delay: 840 }, // was 700
-      { ts: '15:04:03', text: 'Deploying to lab environment (RTX 4090 node)...', delay: 960 },          // was 800
-      { ts: '15:04:04', text: '\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 Killing existing processes', delay: 720 }, // was 600
-      { ts: '15:04:05', text: 'Starting VSR Router (Go + Rust/CUDA)', dots: true, result: '\u2705 healthy', delay: 1200 },  // was 1000
-      { ts: '15:04:06', text: 'Starting Envoy Proxy (ext_proc filter)', dots: true, result: '\u2705 running', delay: 960 }, // was 800
-      { ts: '15:04:07', text: 'Verifying Ollama (qwen2.5:14b)', dots: true, result: '\u2705 loaded', delay: 840 },         // was 700
-      { ts: '15:04:08', text: 'Initializing Qwen3 embeddings (1024-dim)', dots: true, result: '\u2705 ready', delay: 840 }, // was 700
-      { ts: '15:04:09', text: 'Semantic cache online (in-memory, TTL=300s)', dots: true, result: '\u2705 active', delay: 840 }, // was 700
-      { ts: '15:04:10', text: '', result: '\u2705 Environment ready \u2014 running reproduction', final: true, delay: 720 }, // was 600
+      { ts: '15:04:01', text: 'Analyzing issue #1448 infrastructure requirements...', delay: 840 },
+      { ts: '15:04:02', text: 'Creating OpenShift namespace reprobot-bug-1448...', delay: 840 },
+      { ts: '15:04:03', text: 'Deploying VSR Router via Deployment (1 replica)', dots: true, result: '\u2705', delay: 960 },
+      { ts: '15:04:04', text: 'Deploying Envoy Gateway (Gateway API + BBR plugins)', dots: true, result: '\u2705', delay: 960 },
+      { ts: '15:04:05', text: 'Scheduling GPU pod via NVIDIA GPU Operator', dots: true, result: '\u2705 (RTX 4090)', delay: 1200 },
+      { ts: '15:04:06', text: 'InferenceService ready (qwen2.5:14b)', dots: true, result: '\u2705', delay: 840 },
+      { ts: '15:04:07', text: 'Configuring semantic cache (threshold=0.85)', dots: true, result: '\u2705', delay: 840 },
+      { ts: '15:04:08', text: 'All pods Running \u2014 starting reproduction...', delay: 720 },
     ];
 
     let totalDelay = 360 + BANNER_DELAY;  // was 300 + banner delay
@@ -1297,7 +1295,7 @@ html, body {
       }, totalDelay);
     });
 
-    schedule(() => runPhase4(), totalDelay + 1440);  // was 1200
+    schedule(() => runPhase4(), totalDelay + 5040);  // was 1200 + 3600 dwell
   }
 
   // ── Phase 4: Reproduction ─────────────
@@ -1368,7 +1366,7 @@ html, body {
           document.getElementById('repro-verdict').classList.add('visible');
         }, bd + 1200);  // was 1000
 
-        schedule(() => runPhase5(), bd + 3600);  // was 3000
+        schedule(() => runPhase5(), bd + 7200);  // was 3000 + 3600 dwell
       }, d + 1800);  // was 1500
     }, 480 + BANNER_DELAY);  // was 400 + banner delay
   }
@@ -1418,9 +1416,9 @@ html, body {
     }, termStart);
 
     const termLines = [
-      { text: '[Day 13] Rebuilding from fix branch...', delay: 0 },
-      { text: '[Day 13] Restarting VSR with cache fix... \u2705', delay: 600 },
-      { text: '[Day 13] Re-running reproduction steps...', delay: 600 },
+      { text: '[Day 13] Pulling fix branch in OpenShift build...', delay: 0 },
+      { text: '[Day 13] Rolling update VSR pods with fix... \u2705', delay: 600 },
+      { text: '[Day 13] Re-running reproduction in namespace...', delay: 600 },
     ];
 
     let termDelay = termStart + 300;
