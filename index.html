@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReproBot Demo</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-border: #30363d;
+  --bg-terminal: #0a0e14;
+  --text: #c9d1d9;
+  --text-bright: #f0f6fc;
+  --text-dim: #8b949e;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --yellow: #d29922;
+  --orange: #db6d28;
+  --purple: #bc8cff;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--ui);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Header ──────────────────────────── */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: -0.02em;
+}
+
+/* ── Phases ───────────────────────────── */
+.phase {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  padding: 0 48px;
+}
+.phase.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Phase Banner ────────────────────── */
+.phase-banner {
+  flex-shrink: 0;
+  text-align: left;
+  padding: 62px 32px 14px;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  background: rgba(30, 38, 50, 0.95);
+  border-left: 4px solid var(--blue);
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 2px 16px rgba(88, 166, 255, 0.08);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.phase.active .phase-banner {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* AI phases get green accent */
+.phase-banner.banner-ai {
+  border-left-color: var(--green);
+  box-shadow: 0 2px 16px rgba(63, 185, 80, 0.1);
+}
+.phase-banner-actor-human { color: var(--blue); font-weight: 600; }
+.phase-banner-actor-ai { color: var(--green); font-weight: 600; }
+
+/* ── Phase Content Area ──────────────── */
+.phase-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 56px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s ease 0s, transform 0.4s ease 0s;
+}
+.phase-content.reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
+.phase-banner-title {
+  font-size: 1.25rem;
+  color: var(--text-bright);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.phase-banner-sub {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ── Progress ────────────────────────── */
+.progress {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+}
+.progress-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card-border);
+  background: transparent;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
+}
+.progress-dot.done {
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.4);
+}
+.progress-dot.active {
+  border-color: var(--blue);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(88, 166, 255, 0); }
+}
+
+.pause-indicator {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 200;
+  font-size: 4rem;
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  pointer-events: none;
+}
+.pause-indicator.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0.6;
+}
+
+/* ── Speed Control ───────────────────── */
+.speed-control {
+  position: fixed;
+  bottom: 52px; right: 16px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 27, 34, 0.85);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.speed-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  min-width: 30px;
+  text-align: center;
+}
+.speed-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 4px;
+  background: var(--bg-card-border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--blue);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(88, 166, 255, 0.4);
+}
+.speed-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--blue);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(88, 166, 255, 0.4);
+}
+.speed-pause-btn {
+  background: none;
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-dim);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+.speed-pause-btn:hover {
+  border-color: var(--blue);
+  color: var(--text-bright);
+}
+
+/* ── Arrow Navigation ────────────────── */
+.nav-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 150;
+  background: rgba(22, 27, 34, 0.7);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-dim);
+  font-size: 2rem;
+  width: 48px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, opacity 0.3s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-arrow.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.nav-arrow:hover {
+  background: rgba(22, 27, 34, 0.9);
+  border-color: var(--blue);
+  color: var(--text-bright);
+}
+.nav-arrow-left {
+  left: 16px;
+}
+.nav-arrow-right {
+  right: 16px;
+}
+
+/* ── Phase 1: Issue ──────────────────── */
+.issue-card {
+  width: 720px;
+  max-width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.issue-topbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bg-card-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+.issue-repo {
+  color: var(--blue);
+  font-weight: 600;
+}
+.issue-body-area {
+  padding: 20px 24px;
+}
+.issue-title-line {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  line-height: 1.3;
+  min-height: 2em;
+  margin-bottom: 12px;
+}
+.issue-number {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.issue-text {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.65;
+  min-height: 4.5em;
+  margin-bottom: 16px;
+}
+.issue-labels {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.issue-label {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.issue-label.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.issue-label.lbl-bug { background: rgba(248, 81, 73, 0.2); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.4); }
+.issue-label.lbl-security { background: rgba(219, 109, 40, 0.2); color: var(--orange); border: 1px solid rgba(219, 109, 40, 0.4); }
+.issue-label.lbl-p1 { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+.issue-submit-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.issue-submit-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--ui);
+  cursor: default;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.15s;
+}
+.issue-submit-btn.visible { opacity: 1; }
+.issue-submit-btn.clicked { transform: scale(0.95); background: #2ea043; }
+
+/* ── Phase 2: Analysis ───────────────── */
+.analysis-split {
+  display: flex;
+  gap: 24px;
+  width: 900px;
+  max-width: 100%;
+  height: 420px;
+}
+.analysis-left {
+  flex: 0 0 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 6px;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+.analysis-left-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+.analysis-left-body {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.analysis-right {
+  flex: 1;
+  background: var(--bg-terminal);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 6px;
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+/* ── Phase 3: Terminal ───────────────── */
+.terminal-full {
+  width: 820px;
+  max-width: 100%;
+  background: var(--bg-terminal);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+.terminal-full .ts { color: var(--text-dim); }
+.terminal-full .ok { color: var(--green); }
+.terminal-full .spin { color: var(--yellow); }
+.terminal-full .cmd { color: var(--text-bright); }
+
+/* ── Phase 4: Reproduction ───────────── */
+.repro-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 900px;
+  max-width: 100%;
+}
+.repro-panels {
+  display: flex;
+  gap: 20px;
+}
+.repro-panel {
+  flex: 1;
+  background: var(--bg-terminal);
+  border: 2px solid var(--bg-card-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s, transform 0.5s, border-color 0.6s, box-shadow 0.6s;
+}
+.repro-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.repro-panel.glow-green {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgba(63, 185, 80, 0.15);
+}
+.repro-panel.glow-red {
+  border-color: var(--red);
+  box-shadow: 0 0 20px rgba(248, 81, 73, 0.2);
+}
+.repro-panel-title {
+  font-family: var(--ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-bright);
+}
+.repro-verdict {
+  background: var(--bg-card);
+  border: 2px solid var(--red);
+  border-radius: 8px;
+  padding: 20px 24px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+.repro-verdict.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.repro-verdict-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--red);
+  margin-bottom: 6px;
+}
+.repro-verdict-detail {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.repro-verdict-cause {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* ── Phase 5: Report ─────────────────── */
+.report-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 700px;
+  max-width: 100%;
+}
+.report-comment {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 6px;
+  padding: 18px 22px;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.report-comment.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.report-comment-header {
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+.report-timeline {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.report-timeline.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tl-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.4s, transform 0.4s;
+  font-size: 0.88rem;
+}
+.tl-entry.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.tl-day {
+  flex: 0 0 60px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.tl-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tl-dot.red { background: var(--red); box-shadow: 0 0 6px rgba(248,81,73,0.4); }
+.tl-dot.yellow { background: var(--yellow); box-shadow: 0 0 6px rgba(210,153,34,0.4); }
+.tl-dot.green { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,0.4); }
+.tl-text { color: var(--text); }
+
+/* ── Utilities ────────────────────────── */
+.cursor-blink {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  background: var(--text-bright);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .phase { padding: 0 16px; }
+  .phase-banner { padding: 56px 16px 10px; max-width: 100%; }
+  .phase-banner-title { font-size: 1rem; }
+  .analysis-split { flex-direction: column; height: auto; }
+  .analysis-left { flex: none; }
+  .repro-panels { flex-direction: column; }
+  .issue-card, .terminal-full, .analysis-split, .repro-container, .report-container {
+    width: 100%;
+  }
+  .nav-arrow { width: 36px; height: 48px; font-size: 1.5rem; }
+  .nav-arrow-left { left: 8px; }
+  .nav-arrow-right { right: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-logo">&#128300; ReproBot</span>
+</div>
+
+<!-- Phase 1: Issue Reported -->
+<div class="phase" id="phase1">
+  <div class="phase-banner">
+    <div class="phase-banner-title"><span class="phase-banner-actor-human">&#128100; User</span> opens a new issue on GitHub</div>
+    <div class="phase-banner-sub">A cache isolation bug is reported with steps to reproduce</div>
+  </div>
+  <div class="phase-content">
+    <div class="issue-card">
+      <div class="issue-topbar">
+        <span class="issue-repo">vllm-project/semantic-router</span>
+        <span style="color:var(--text-dim)">/ Issues / New</span>
+      </div>
+      <div class="issue-body-area">
+        <div class="issue-title-line" id="issue-title"></div>
+        <div class="issue-text" id="issue-text"></div>
+        <div class="issue-labels">
+          <span class="issue-label lbl-bug" id="lbl-bug">bug</span>
+          <span class="issue-label lbl-security" id="lbl-security">security</span>
+          <span class="issue-label lbl-p1" id="lbl-p1">P1</span>
+        </div>
+        <div class="issue-submit-row">
+          <button class="issue-submit-btn" id="issue-submit">Submit new issue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 2: AI Analysis -->
+<div class="phase" id="phase2">
+  <div class="phase-banner banner-ai">
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> detects the issue and analyzes feasibility</div>
+    <div class="phase-banner-sub">Classifying the bug, checking infrastructure requirements, planning reproduction</div>
+  </div>
+  <div class="phase-content">
+    <div class="analysis-split">
+      <div class="analysis-left">
+        <div class="analysis-left-title">Issue #1448</div>
+        <div class="analysis-left-body">Semantic Cache Cross-User Data Leak<br><br>When using semantic cache, User A's cached responses are returned to User B when queries are semantically similar. No user_id partitioning in cache keys.<br><br><span style="color:var(--red)">bug</span> &nbsp; <span style="color:var(--orange)">security</span> &nbsp; <span style="color:var(--red)">P1</span></div>
+      </div>
+      <div class="analysis-right" id="analysis-output"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 3: Environment -->
+<div class="phase" id="phase3">
+  <div class="phase-banner banner-ai">
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> provisions the test environment</div>
+    <div class="phase-banner-sub">Starting VSR Router, Envoy Proxy, Ollama, and embedding models</div>
+  </div>
+  <div class="phase-content">
+    <div class="terminal-full" id="terminal-output"></div>
+  </div>
+</div>
+
+<!-- Phase 4: Reproduction -->
+<div class="phase" id="phase4">
+  <div class="phase-banner banner-ai">
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> reproduces the bug with real infrastructure</div>
+    <div class="phase-banner-sub">Sending requests as two different users to trigger the cache leak</div>
+  </div>
+  <div class="phase-content">
+    <div class="repro-container">
+      <div class="repro-panels">
+        <div class="repro-panel" id="repro-alice">
+          <div class="repro-panel-title">Step 1: Alice</div>
+          <div id="repro-alice-body"></div>
+        </div>
+        <div class="repro-panel" id="repro-bob">
+          <div class="repro-panel-title">Step 2: Bob</div>
+          <div id="repro-bob-body"></div>
+        </div>
+      </div>
+      <div class="repro-verdict" id="repro-verdict">
+        <div class="repro-verdict-title">&#128308; BUG CONFIRMED</div>
+        <div class="repro-verdict-detail">Bob received Alice's data ($12,847.53)</div>
+        <div class="repro-verdict-cause">Root cause: Cache keys on (model, query_embedding) &mdash; no user_id partition</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 5: Report -->
+<div class="phase" id="phase5">
+  <div class="phase-banner banner-ai">
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> reports evidence and tracks the fix</div>
+    <div class="phase-banner-sub">Posting structured evidence to GitHub and adding to regression suite</div>
+  </div>
+  <div class="phase-content">
+  <div class="report-container">
+    <div class="report-comment" id="report-comment">
+      <div class="report-comment-header">&#128300; ReproBot &mdash; Automated Bug Reproduction</div>
+      <div>
+        <strong>Status:</strong> &#128308; Bug Confirmed<br>
+        <strong>Evidence:</strong> Cache hit (similarity=0.92) returned User A's response to User B without user_id isolation<br>
+        <strong>Environment:</strong> VSR v0.2 Athena, Ollama qwen2.5:14b, RTX 4090<br>
+        <strong>Reproduction:</strong> 2/2 steps completed<br><br>
+        <span style="color:var(--text-dim)">Added to regression suite &mdash; will re-validate daily.</span>
+      </div>
+    </div>
+    <div class="report-timeline" id="report-timeline">
+      <div class="tl-entry" data-tl="0"><span class="tl-day">Day 1</span><span class="tl-dot red"></span><span class="tl-text">Confirmed</span></div>
+      <div class="tl-entry" data-tl="1"><span class="tl-day">Day 5</span><span class="tl-dot red"></span><span class="tl-text">Still present</span></div>
+      <div class="tl-entry" data-tl="2"><span class="tl-day">Day 12</span><span class="tl-dot yellow"></span><span class="tl-text">Fix PR #1538 merged</span></div>
+      <div class="tl-entry" data-tl="3"><span class="tl-day">Day 13</span><span class="tl-dot green"></span><span class="tl-text" style="color:var(--green)">Bug FIXED &mdash; cache now partitions by user_id</span></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div class="progress">
+  <div class="progress-dot" data-phase="1"></div>
+  <div class="progress-dot" data-phase="2"></div>
+  <div class="progress-dot" data-phase="3"></div>
+  <div class="progress-dot" data-phase="4"></div>
+  <div class="progress-dot" data-phase="5"></div>
+</div>
+
+<div class="speed-control" id="speed-control">
+  <button class="speed-pause-btn" id="speed-pause-btn">&#9208;</button>
+  <input type="range" class="speed-slider" id="speed-slider" min="0.5" max="3" step="0.1" value="1">
+  <span class="speed-label" id="speed-label">1.0x</span>
+</div>
+
+<button class="nav-arrow nav-arrow-left" id="nav-left">&#8592;</button>
+<button class="nav-arrow nav-arrow-right" id="nav-right">&#8594;</button>
+
+<div class="pause-indicator" id="pause-indicator">&#9208;&#65039;</div>
+
+<script>
+(() => {
+  'use strict';
+
+  let currentPhase = 0;
+  let paused = false;
+  let speed = 1; // user-facing speed multiplier
+  let timers = [];
+  let typewriterActive = null;
+
+  const TOTAL_PHASES = 5;
+  const $slider = document.getElementById('speed-slider');
+  const $speedLabel = document.getElementById('speed-label');
+  const $pauseBtn = document.getElementById('speed-pause-btn');
+  const $indicator = document.getElementById('pause-indicator');
+  const $navLeft = document.getElementById('nav-left');
+  const $navRight = document.getElementById('nav-right');
+
+  // ── Timer management ──────────────────
+  function schedule(fn, baseMs) {
+    const ms = baseMs / speed;
+    const entry = { fn, ms, started: Date.now(), id: null, done: false };
+    entry.id = setTimeout(() => {
+      entry.done = true;
+      fn();
+    }, ms);
+    timers.push(entry);
+    return entry;
+  }
+
+  function pauseTimers() {
+    const now = Date.now();
+    timers = timers.filter(t => !t.done);
+    for (const t of timers) {
+      clearTimeout(t.id);
+      t.remaining = Math.max(0, t.ms - (now - t.started));
+    }
+  }
+
+  function resumeTimers() {
+    for (const t of timers) {
+      if (t.done) continue;
+      t.started = Date.now();
+      t.ms = t.remaining;
+      t.id = setTimeout(() => {
+        t.done = true;
+        t.fn();
+      }, t.remaining);
+    }
+  }
+
+  function rescaleTimers(oldSpeed, newSpeed) {
+    // Rescale all pending timers to the new speed
+    const now = Date.now();
+    timers = timers.filter(t => !t.done);
+    for (const t of timers) {
+      clearTimeout(t.id);
+      const elapsed = now - t.started;
+      const remaining = Math.max(0, t.ms - elapsed);
+      // remaining was at oldSpeed; convert to newSpeed
+      t.remaining = remaining * (oldSpeed / newSpeed);
+      t.ms = t.remaining;
+      t.started = now;
+      if (!paused) {
+        t.id = setTimeout(() => {
+          t.done = true;
+          t.fn();
+        }, t.remaining);
+      }
+    }
+  }
+
+  // ── Pause/Resume ──────────────────────
+  function togglePause() {
+    if (paused) {
+      paused = false;
+      $indicator.classList.remove('show');
+      $pauseBtn.innerHTML = '&#9208;';
+      resumeTimers();
+      if (typewriterActive) typewriterActive.resume();
+    } else {
+      paused = true;
+      $indicator.classList.add('show');
+      $pauseBtn.innerHTML = '&#9654;';
+      pauseTimers();
+      if (typewriterActive) typewriterActive.pause();
+    }
+  }
+
+  // Click anywhere except speed control and nav arrows to pause/resume
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.speed-control')) return;
+    if (e.target.closest('.nav-arrow')) return;
+    togglePause();
+  });
+
+  $pauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePause();
+  });
+
+  // ── Speed control ─────────────────────
+  $slider.addEventListener('input', (e) => {
+    e.stopPropagation();
+    const oldSpeed = speed;
+    speed = parseFloat($slider.value);
+    $speedLabel.textContent = speed.toFixed(1) + 'x';
+    rescaleTimers(oldSpeed, speed);
+    if (typewriterActive) typewriterActive.updateSpeed();
+  });
+  // Prevent click-through on the slider track
+  document.getElementById('speed-control').addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // ── Phase management ──────────────────
+  function showPhase(n) {
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.phase-content').forEach(c => c.classList.remove('reveal'));
+    document.querySelectorAll('.progress-dot').forEach(d => {
+      const dp = parseInt(d.dataset.phase);
+      d.classList.remove('active');
+      if (dp < n) d.classList.add('done');
+      else d.classList.remove('done');
+      if (dp === n) d.classList.add('active');
+    });
+    const el = document.getElementById('phase' + n);
+    if (el) {
+      el.classList.add('active');
+      // Reveal content after banner has animated in
+      schedule(() => {
+        const content = el.querySelector('.phase-content');
+        if (content) content.classList.add('reveal');
+      }, 720); // 0.6s delay (×1.2 base)
+    }
+    currentPhase = n;
+    updateArrows();
+  }
+
+  function updateArrows() {
+    if (currentPhase <= 1) $navLeft.classList.remove('visible');
+    else $navLeft.classList.add('visible');
+    if (currentPhase >= TOTAL_PHASES) $navRight.classList.remove('visible');
+    else $navRight.classList.add('visible');
+  }
+
+  // ── Manual navigation ──────────────────
+  function clearAllTimers() {
+    for (const t of timers) {
+      clearTimeout(t.id);
+      t.done = true;
+    }
+    timers = [];
+    if (typewriterActive) {
+      typewriterActive.pause();
+      typewriterActive = null;
+    }
+  }
+
+  function resetPhaseDOM(n) {
+    // Reset phase-specific DOM elements so they render correctly when revisited
+    if (n === 1) {
+      document.getElementById('issue-title').innerHTML = '';
+      document.getElementById('issue-text').innerHTML = '';
+      ['lbl-bug', 'lbl-security', 'lbl-p1'].forEach(id => document.getElementById(id).classList.remove('visible'));
+      const btn = document.getElementById('issue-submit');
+      btn.classList.remove('visible', 'clicked');
+      btn.textContent = 'Submit new issue';
+      btn.style.background = '';
+    } else if (n === 2) {
+      document.getElementById('analysis-output').innerHTML = '';
+    } else if (n === 3) {
+      document.getElementById('terminal-output').innerHTML = '';
+    } else if (n === 4) {
+      const ap = document.getElementById('repro-alice');
+      const bp = document.getElementById('repro-bob');
+      ap.classList.remove('visible', 'glow-green');
+      bp.classList.remove('visible', 'glow-red');
+      document.getElementById('repro-alice-body').innerHTML = '';
+      document.getElementById('repro-bob-body').innerHTML = '';
+      document.getElementById('repro-verdict').classList.remove('visible');
+    } else if (n === 5) {
+      document.getElementById('report-comment').classList.remove('visible');
+      document.getElementById('report-timeline').classList.remove('visible');
+      document.querySelectorAll('.tl-entry').forEach(e => e.classList.remove('visible'));
+    }
+  }
+
+  function navigateToPhase(n) {
+    if (n < 1 || n > TOTAL_PHASES || n === currentPhase) return;
+    // Stop all pending auto-play timers
+    clearAllTimers();
+    // Ensure unpaused so the new phase animates
+    paused = false;
+    $indicator.classList.remove('show');
+    $pauseBtn.innerHTML = '&#9208;';
+    // Reset target phase DOM and run it
+    resetPhaseDOM(n);
+    const phaseRunners = { 1: runPhase1, 2: runPhase2, 3: runPhase3, 4: runPhase4, 5: runPhase5 };
+    phaseRunners[n]();
+  }
+
+  $navLeft.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigateToPhase(currentPhase - 1);
+  });
+
+  $navRight.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigateToPhase(currentPhase + 1);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigateToPhase(currentPhase - 1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      navigateToPhase(currentPhase + 1);
+    }
+  });
+
+  // ── Typewriter ────────────────────────
+  function typewrite(el, text, baseCps, callback) {
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor-blink';
+    el.textContent = '';
+    el.appendChild(cursor);
+
+    let interval = null;
+
+    const tw = {
+      pause() { if (interval) { clearInterval(interval); interval = null; } },
+      resume() { if (i < text.length) start(); },
+      updateSpeed() {
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+          start();
+        }
+      }
+    };
+    typewriterActive = tw;
+
+    function start() {
+      const ms = 1000 / (baseCps * speed);
+      interval = setInterval(() => {
+        if (i < text.length) {
+          cursor.before(text[i]);
+          i++;
+        } else {
+          clearInterval(interval);
+          interval = null;
+          cursor.remove();
+          typewriterActive = null;
+          if (callback) callback();
+        }
+      }, ms);
+    }
+
+    start();
+    return tw;
+  }
+
+  // ── Phase 1: Issue ────────────────────
+  // All delays multiplied by 1.2 from original values
+  // Banner-to-content delay: banner animates in first, then content starts
+  const BANNER_DELAY = 720;
+
+  function runPhase1() {
+    showPhase(1);
+
+    const title = 'Semantic Cache Cross-User Data Leak';
+    const body = 'When using semantic cache, User A\'s cached responses are returned to User B when queries are semantically similar. The cache keys on embedding similarity without partitioning by user_id, leaking sensitive data across tenants.';
+
+    const titleEl = document.getElementById('issue-title');
+    const textEl = document.getElementById('issue-text');
+
+    schedule(() => {
+    typewrite(titleEl, title, 25, () => {       // was 30 cps
+      schedule(() => {
+        typewrite(textEl, body, 46, () => {      // was 55 cps
+          schedule(() => {
+            document.getElementById('lbl-bug').classList.add('visible');
+            schedule(() => {
+              document.getElementById('lbl-security').classList.add('visible');
+              schedule(() => {
+                document.getElementById('lbl-p1').classList.add('visible');
+                schedule(() => {
+                  const btn = document.getElementById('issue-submit');
+                  btn.classList.add('visible');
+                  schedule(() => {
+                    btn.classList.add('clicked');
+                    schedule(() => {
+                      btn.classList.remove('clicked');
+                      btn.textContent = 'Submitted';
+                      btn.style.background = '#2ea043';
+                      titleEl.innerHTML = title + ' <span class="issue-number">#1448</span>';
+                      schedule(() => runPhase2(), 1440);  // was 1200
+                    }, 240);   // was 200
+                  }, 720);     // was 600
+                }, 600);       // was 500
+              }, 360);         // was 300
+            }, 360);           // was 300
+          }, 360);             // was 300
+        });
+      }, 480);                 // was 400
+    });
+    }, BANNER_DELAY);
+  }
+
+  // ── Phase 2: Analysis ─────────────────
+  function runPhase2() {
+    showPhase(2);
+    const output = document.getElementById('analysis-output');
+    output.innerHTML = '';
+
+    const lines = [
+      { text: '\u{1F50D} Analyzing issue #1448...\n', color: 'var(--blue)', delay: 720 },    // was 600
+      { text: '\n', delay: 240 },                                                              // was 200
+      { text: 'Bug Classification:\n', color: 'var(--text-bright)', delay: 480 },              // was 400
+      { text: '  Type: Security / Data Leak\n', delay: 360 },                                 // was 300
+      { text: '  Component: Semantic Cache\n', delay: 360 },                                  // was 300
+      { text: '  Severity: P1 \u2014 affects multi-tenant deployments\n', delay: 480 },       // was 400
+      { text: '\n', delay: 360 },                                                              // was 300
+      { text: 'Required Infrastructure:\n', color: 'var(--text-bright)', delay: 480 },        // was 400
+      { text: '  \u2705 Semantic cache (in-memory HNSW)\n', color: 'var(--green)', delay: 420 },    // was 350
+      { text: '  \u2705 Embedding model (Qwen3, 1024-dim)\n', color: 'var(--green)', delay: 420 },  // was 350
+      { text: '  \u2705 LLM endpoint (Ollama, RTX 4090)\n', color: 'var(--green)', delay: 420 },    // was 350
+      { text: '  \u2705 User identity headers (x-user-id)\n', color: 'var(--green)', delay: 420 },  // was 350
+      { text: '  \u274C Kubernetes \u2014 not needed\n', color: 'var(--text-dim)', delay: 300 },     // was 250
+      { text: '  \u274C External DB \u2014 not needed\n', color: 'var(--text-dim)', delay: 300 },    // was 250
+      { text: '\n', delay: 360 },                                                              // was 300
+      { text: 'Verdict: ', delay: 240 },                                                       // was 200
+      { text: 'FEASIBLE \u2705\n', color: 'var(--green)', delay: 720 },                       // was 600
+      { text: '\n', delay: 480 },                                                              // was 400
+      { text: 'Reproduction Plan:\n', color: 'var(--text-bright)', delay: 480 },               // was 400
+      { text: '  1. Enable semantic cache (threshold=0.85, TTL=300s)\n', delay: 420 },        // was 350
+      { text: '  2. User A asks about account balance \u2192 cache MISS \u2192 stored\n', delay: 420 },  // was 350
+      { text: '  3. User B asks similar question \u2192 cache HIT \u2192 leak detected?\n', delay: 420 }, // was 350
+    ];
+
+    let totalDelay = 480 + BANNER_DELAY;   // was 400 + banner delay
+    lines.forEach(line => {
+      totalDelay += line.delay;
+      schedule(() => {
+        const span = document.createElement('span');
+        if (line.color) span.style.color = line.color;
+        span.textContent = line.text;
+        output.appendChild(span);
+        output.scrollTop = output.scrollHeight;
+      }, totalDelay);
+    });
+
+    schedule(() => runPhase3(), totalDelay + 1800);  // was 1500
+  }
+
+  // ── Phase 3: Terminal ─────────────────
+  function runPhase3() {
+    showPhase(3);
+    const output = document.getElementById('terminal-output');
+    output.innerHTML = '';
+
+    const lines = [
+      { ts: '15:04:01', text: 'Generating VSR config for cache isolation test...', delay: 840 },        // was 700
+      { ts: '15:04:02', text: 'semantic_cache: enabled=true threshold=0.85 embedding_model=qwen3', delay: 840 }, // was 700
+      { ts: '15:04:03', text: 'Deploying to lab environment (RTX 4090 node)...', delay: 960 },          // was 800
+      { ts: '15:04:04', text: '\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 Killing existing processes', delay: 720 }, // was 600
+      { ts: '15:04:05', text: 'Starting VSR Router (Go + Rust/CUDA)', dots: true, result: '\u2705 healthy', delay: 1200 },  // was 1000
+      { ts: '15:04:06', text: 'Starting Envoy Proxy (ext_proc filter)', dots: true, result: '\u2705 running', delay: 960 }, // was 800
+      { ts: '15:04:07', text: 'Verifying Ollama (qwen2.5:14b)', dots: true, result: '\u2705 loaded', delay: 840 },         // was 700
+      { ts: '15:04:08', text: 'Initializing Qwen3 embeddings (1024-dim)', dots: true, result: '\u2705 ready', delay: 840 }, // was 700
+      { ts: '15:04:09', text: 'Semantic cache online (in-memory, TTL=300s)', dots: true, result: '\u2705 active', delay: 840 }, // was 700
+      { ts: '15:04:10', text: '', result: '\u2705 Environment ready \u2014 running reproduction', final: true, delay: 720 }, // was 600
+    ];
+
+    let totalDelay = 360 + BANNER_DELAY;  // was 300 + banner delay
+    lines.forEach(line => {
+      totalDelay += line.delay;
+      schedule(() => {
+        const row = document.createElement('div');
+        let html = '';
+        if (line.ts) html += '<span class="ts">[' + line.ts + '] </span>';
+        html += '<span class="cmd">' + escHtml(line.text) + '</span>';
+        if (line.dots) {
+          const pad = 48 - line.text.length;
+          html += '<span class="cmd">' + '.'.repeat(Math.max(pad, 3)) + ' </span>';
+        }
+        if (line.result) {
+          html += '<span class="ok">' + line.result + '</span>';
+        }
+        row.innerHTML = html;
+        output.appendChild(row);
+        output.scrollTop = output.scrollHeight;
+      }, totalDelay);
+    });
+
+    schedule(() => runPhase4(), totalDelay + 1440);  // was 1200
+  }
+
+  // ── Phase 4: Reproduction ─────────────
+  function runPhase4() {
+    showPhase(4);
+
+    const alicePanel = document.getElementById('repro-alice');
+    const aliceBody = document.getElementById('repro-alice-body');
+    const bobPanel = document.getElementById('repro-bob');
+    const bobBody = document.getElementById('repro-bob-body');
+
+    schedule(() => {
+      alicePanel.classList.add('visible');
+      const aliceLines = [
+        { text: '\u2192 POST /v1/chat/completions\n', color: 'var(--blue)', delay: 0 },
+        { text: '  x-user-id: alice\n', color: 'var(--purple)', delay: 480 },        // was 400
+        { text: '  "What is my current account balance?"\n', color: 'var(--text)', delay: 720 },  // was 600
+        { text: '\n', delay: 480 },                                                    // was 400
+        { text: '\u2190 200 OK\n', color: 'var(--green)', delay: 720 },               // was 600
+        { text: '  Cache: MISS \u2192 stored\n', color: 'var(--yellow)', delay: 480 }, // was 400
+        { text: '  "Your account balance is $12,847.53, Alice."\n', color: 'var(--text-bright)', delay: 600 }, // was 500
+      ];
+
+      let d = 360;  // was 300
+      aliceLines.forEach(line => {
+        d += line.delay;
+        schedule(() => {
+          const span = document.createElement('span');
+          span.style.color = line.color;
+          span.textContent = line.text;
+          aliceBody.appendChild(span);
+        }, d);
+      });
+
+      schedule(() => {
+        alicePanel.classList.add('glow-green');
+      }, d + 360);  // was 300
+
+      schedule(() => {
+        bobPanel.classList.add('visible');
+        const bobLines = [
+          { text: '\u2192 POST /v1/chat/completions\n', color: 'var(--blue)', delay: 0 },
+          { text: '  x-user-id: bob\n', color: 'var(--purple)', delay: 480 },         // was 400
+          { text: '  "What is my account balance?"\n', color: 'var(--text)', delay: 720 },  // was 600
+          { text: '\n', delay: 480 },                                                   // was 400
+          { text: '\u2190 200 OK\n', color: 'var(--green)', delay: 720 },              // was 600
+          { text: '  Cache: HIT (similarity=0.92)\n', color: 'var(--red)', delay: 600 },    // was 500
+          { text: '  id: chatcmpl-cache-1773439679\n', color: 'var(--text-dim)', delay: 360 }, // was 300
+          { text: '  "Your account balance is $12,847.53, Alice."\n', color: 'var(--red)', delay: 720 }, // was 600
+        ];
+
+        let bd = 360;  // was 300
+        bobLines.forEach(line => {
+          bd += line.delay;
+          schedule(() => {
+            const span = document.createElement('span');
+            span.style.color = line.color;
+            span.textContent = line.text;
+            bobBody.appendChild(span);
+          }, bd);
+        });
+
+        schedule(() => {
+          bobPanel.classList.add('glow-red');
+        }, bd + 480);  // was 400
+
+        schedule(() => {
+          document.getElementById('repro-verdict').classList.add('visible');
+        }, bd + 1200);  // was 1000
+
+        schedule(() => runPhase5(), bd + 3600);  // was 3000
+      }, d + 1800);  // was 1500
+    }, 480 + BANNER_DELAY);  // was 400 + banner delay
+  }
+
+  // ── Phase 5: Report ───────────────────
+  function runPhase5() {
+    showPhase(5);
+
+    schedule(() => {
+      document.getElementById('report-comment').classList.add('visible');
+    }, 600 + BANNER_DELAY);  // was 500 + banner delay
+
+    schedule(() => {
+      document.getElementById('report-timeline').classList.add('visible');
+      const entries = document.querySelectorAll('.tl-entry');
+      entries.forEach((entry, i) => {
+        schedule(() => entry.classList.add('visible'), 480 * (i + 1));  // was 400
+      });
+    }, 3000 + BANNER_DELAY);  // was 2500 + banner delay
+
+    schedule(() => {
+      document.querySelector('.progress-dot[data-phase="5"]').classList.remove('active');
+      document.querySelector('.progress-dot[data-phase="5"]').classList.add('done');
+    }, 8400 + BANNER_DELAY);  // was 7000 + banner delay
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Start ─────────────────────────────
+  schedule(() => runPhase1(), 720);  // was 600
+})();
+</script>
+</body>
+</html>
