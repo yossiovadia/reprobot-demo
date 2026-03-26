@@ -518,7 +518,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 28px;
-  width: 700px;
+  width: 900px;
   max-width: 100%;
 }
 .report-comment {
@@ -586,6 +586,120 @@ html, body {
 .tl-dot.green { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,0.4); }
 .tl-text { color: var(--text); }
 
+/* ── Fix Validation ─────────────────── */
+.fix-validation {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.fix-validation.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fix-banner {
+  width: 100%;
+  background: rgba(30, 38, 50, 0.95);
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  padding: 14px 20px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.fix-banner.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fix-terminal {
+  width: 100%;
+  background: var(--bg-terminal);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.fix-terminal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fix-panels {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+.fix-panel {
+  flex: 1;
+  background: var(--bg-terminal);
+  border: 2px solid var(--bg-card-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s, transform 0.5s, border-color 0.6s, box-shadow 0.6s;
+}
+.fix-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fix-panel.glow-green {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgba(63, 185, 80, 0.15);
+}
+.fix-panel.glow-green-bright {
+  border-color: var(--green);
+  box-shadow: 0 0 30px rgba(63, 185, 80, 0.3);
+}
+.fix-panel-title {
+  font-family: var(--ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-bright);
+}
+.fix-verdict {
+  background: var(--bg-card);
+  border: 2px solid var(--green);
+  border-radius: 8px;
+  padding: 20px 24px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s, transform 0.6s;
+  box-shadow: 0 0 24px rgba(63, 185, 80, 0.15);
+}
+.fix-verdict.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fix-verdict-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+.fix-verdict-detail {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
 /* ── Utilities ────────────────────────── */
 .cursor-blink {
   display: inline-block;
@@ -606,6 +720,7 @@ html, body {
   .analysis-split { flex-direction: column; height: auto; }
   .analysis-left { flex: none; }
   .repro-panels { flex-direction: column; }
+  .fix-panels { flex-direction: column; }
   .issue-card, .terminal-full, .analysis-split, .repro-container, .report-container {
     width: 100%;
   }
@@ -708,10 +823,10 @@ html, body {
 <div class="phase" id="phase5">
   <div class="phase-banner banner-ai">
     <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> reports evidence and tracks the fix</div>
-    <div class="phase-banner-sub">Posting structured evidence to GitHub and adding to regression suite</div>
+    <div class="phase-banner-sub">Posting structured evidence to GitHub, tracking regression, and validating the fix</div>
   </div>
-  <div class="phase-content">
-  <div class="report-container">
+  <div class="phase-content" style="align-items: flex-start; padding-top: 16px;">
+  <div class="report-container" style="margin: 0 auto;">
     <div class="report-comment" id="report-comment">
       <div class="report-comment-header">&#128300; ReproBot &mdash; Automated Bug Reproduction</div>
       <div>
@@ -727,6 +842,26 @@ html, body {
       <div class="tl-entry" data-tl="1"><span class="tl-day">Day 5</span><span class="tl-dot red"></span><span class="tl-text">Still present</span></div>
       <div class="tl-entry" data-tl="2"><span class="tl-day">Day 12</span><span class="tl-dot yellow"></span><span class="tl-text">Fix PR #1538 merged</span></div>
       <div class="tl-entry" data-tl="3"><span class="tl-day">Day 13</span><span class="tl-dot green"></span><span class="tl-text" style="color:var(--green)">Bug FIXED &mdash; cache now partitions by user_id</span></div>
+    </div>
+
+    <!-- Fix Validation -->
+    <div class="fix-validation" id="fix-validation">
+      <div class="fix-banner" id="fix-banner">&#128260; Fix Validation &mdash; PR #1538 merged, re-running reproduction...</div>
+      <div class="fix-terminal" id="fix-terminal"></div>
+      <div class="fix-panels">
+        <div class="fix-panel" id="fix-alice">
+          <div class="fix-panel-title">Step 1: Alice (same test)</div>
+          <div id="fix-alice-body"></div>
+        </div>
+        <div class="fix-panel" id="fix-bob">
+          <div class="fix-panel-title">Step 2: Bob (same test)</div>
+          <div id="fix-bob-body"></div>
+        </div>
+      </div>
+      <div class="fix-verdict" id="fix-verdict">
+        <div class="fix-verdict-title">&#9989; BUG FIXED &mdash; Cache correctly skips personalized responses</div>
+        <div class="fix-verdict-detail">Bob gets his own data ($3,291.07). Alice's data stays private.</div>
+      </div>
     </div>
   </div>
   </div>
@@ -936,6 +1071,19 @@ html, body {
       document.getElementById('report-comment').classList.remove('visible');
       document.getElementById('report-timeline').classList.remove('visible');
       document.querySelectorAll('.tl-entry').forEach(e => e.classList.remove('visible'));
+      // Reset fix validation
+      document.getElementById('fix-validation').classList.remove('visible');
+      document.getElementById('fix-banner').classList.remove('visible');
+      const fixTerm = document.getElementById('fix-terminal');
+      fixTerm.classList.remove('visible');
+      fixTerm.innerHTML = '';
+      const fixAlice = document.getElementById('fix-alice');
+      const fixBob = document.getElementById('fix-bob');
+      fixAlice.classList.remove('visible', 'glow-green');
+      fixBob.classList.remove('visible', 'glow-green', 'glow-green-bright');
+      document.getElementById('fix-alice-body').innerHTML = '';
+      document.getElementById('fix-bob-body').innerHTML = '';
+      document.getElementById('fix-verdict').classList.remove('visible');
     }
   }
 
@@ -1231,20 +1379,141 @@ html, body {
 
     schedule(() => {
       document.getElementById('report-comment').classList.add('visible');
-    }, 600 + BANNER_DELAY);  // was 500 + banner delay
+    }, 600 + BANNER_DELAY);
 
+    const timelineStart = 3000 + BANNER_DELAY;
     schedule(() => {
       document.getElementById('report-timeline').classList.add('visible');
       const entries = document.querySelectorAll('.tl-entry');
       entries.forEach((entry, i) => {
-        schedule(() => entry.classList.add('visible'), 480 * (i + 1));  // was 400
+        schedule(() => entry.classList.add('visible'), 480 * (i + 1));
       });
-    }, 3000 + BANNER_DELAY);  // was 2500 + banner delay
+    }, timelineStart);
 
+    // Timeline completes after 4 entries × 480ms = 1920ms
+    const timelineEnd = timelineStart + 480 * 5;
+
+    // ── Fix Validation ──────────────────
+    const fixStart = timelineEnd + 800;
+
+    // Show validation container + banner
+    schedule(() => {
+      document.getElementById('fix-validation').classList.add('visible');
+      // Scroll the phase content to show the fix validation
+      const content = document.querySelector('#phase5 .phase-content');
+      if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+    }, fixStart);
+
+    schedule(() => {
+      document.getElementById('fix-banner').classList.add('visible');
+      const content = document.querySelector('#phase5 .phase-content');
+      if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+    }, fixStart + 400);
+
+    // Terminal spinup
+    const termStart = fixStart + 1200;
+    schedule(() => {
+      const term = document.getElementById('fix-terminal');
+      term.classList.add('visible');
+    }, termStart);
+
+    const termLines = [
+      { text: '[Day 13] Rebuilding from fix branch...', delay: 0 },
+      { text: '[Day 13] Restarting VSR with cache fix... \u2705', delay: 600 },
+      { text: '[Day 13] Re-running reproduction steps...', delay: 600 },
+    ];
+
+    let termDelay = termStart + 300;
+    termLines.forEach(line => {
+      termDelay += line.delay;
+      schedule(() => {
+        const term = document.getElementById('fix-terminal');
+        const div = document.createElement('div');
+        div.innerHTML = '<span class="cmd">' + escHtml(line.text) + '</span>';
+        term.appendChild(div);
+        const content = document.querySelector('#phase5 .phase-content');
+        if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+      }, termDelay);
+    });
+
+    // Alice panel (fix)
+    const aliceStart = termDelay + 1000;
+    schedule(() => {
+      document.getElementById('fix-alice').classList.add('visible');
+      const content = document.querySelector('#phase5 .phase-content');
+      if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+    }, aliceStart);
+
+    const aliceFixLines = [
+      { text: '\u2192 POST /v1/chat/completions\n', color: 'var(--blue)', delay: 0 },
+      { text: '  x-user-id: alice\n', color: 'var(--purple)', delay: 400 },
+      { text: '  "What is my current account balance?"\n', color: 'var(--text)', delay: 600 },
+      { text: '\n', delay: 400 },
+      { text: '\u2190 200 OK\n', color: 'var(--green)', delay: 600 },
+      { text: '  Cache: MISS \u2192 skipped (personalized context detected)\n', color: 'var(--green)', delay: 400 },
+      { text: '  "Your balance is $12,847.53, Alice."\n', color: 'var(--text-bright)', delay: 500 },
+    ];
+
+    let aliceDelay = aliceStart + 300;
+    aliceFixLines.forEach(line => {
+      aliceDelay += line.delay;
+      schedule(() => {
+        const span = document.createElement('span');
+        span.style.color = line.color;
+        span.textContent = line.text;
+        document.getElementById('fix-alice-body').appendChild(span);
+      }, aliceDelay);
+    });
+
+    schedule(() => {
+      document.getElementById('fix-alice').classList.add('glow-green');
+    }, aliceDelay + 300);
+
+    // Bob panel (fix)
+    const bobStart = aliceDelay + 1200;
+    schedule(() => {
+      document.getElementById('fix-bob').classList.add('visible');
+      const content = document.querySelector('#phase5 .phase-content');
+      if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+    }, bobStart);
+
+    const bobFixLines = [
+      { text: '\u2192 POST /v1/chat/completions\n', color: 'var(--blue)', delay: 0 },
+      { text: '  x-user-id: bob\n', color: 'var(--purple)', delay: 400 },
+      { text: '  "What is my account balance?"\n', color: 'var(--text)', delay: 600 },
+      { text: '\n', delay: 400 },
+      { text: '\u2190 200 OK\n', color: 'var(--green)', delay: 600 },
+      { text: '  Cache: MISS (no cached entry exists)\n', color: 'var(--green)', delay: 400 },
+      { text: '  "Your balance is $3,291.07, Bob."\n', color: 'var(--text-bright)', delay: 500 },
+    ];
+
+    let bobDelay = bobStart + 300;
+    bobFixLines.forEach(line => {
+      bobDelay += line.delay;
+      schedule(() => {
+        const span = document.createElement('span');
+        span.style.color = line.color;
+        span.textContent = line.text;
+        document.getElementById('fix-bob-body').appendChild(span);
+      }, bobDelay);
+    });
+
+    schedule(() => {
+      document.getElementById('fix-bob').classList.add('glow-green-bright');
+    }, bobDelay + 400);
+
+    // Fix verdict
+    schedule(() => {
+      document.getElementById('fix-verdict').classList.add('visible');
+      const content = document.querySelector('#phase5 .phase-content');
+      if (content) content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
+    }, bobDelay + 1200);
+
+    // Mark phase 5 complete
     schedule(() => {
       document.querySelector('.progress-dot[data-phase="5"]').classList.remove('active');
       document.querySelector('.progress-dot[data-phase="5"]').classList.add('done');
-    }, 8400 + BANNER_DELAY);  // was 7000 + banner delay
+    }, bobDelay + 2400);
   }
 
   function escHtml(s) {
