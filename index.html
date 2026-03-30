@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReproBot Demo</title>
+<title>OpinAI Demo</title>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -733,7 +733,7 @@ html, body {
 <body>
 
 <div class="header">
-  <span class="header-logo">&#128300; ReproBot</span>
+  <span class="header-logo">&#128300; OpinAI</span>
 </div>
 
 <!-- Phase 1: Issue Reported -->
@@ -767,7 +767,7 @@ html, body {
 <!-- Phase 2: AI Analysis -->
 <div class="phase" id="phase2">
   <div class="phase-banner banner-ai">
-    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> detects the issue and analyzes feasibility</div>
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; OpinAI</span> detects the issue and analyzes feasibility</div>
     <div class="phase-banner-sub">Classifying the bug, checking infrastructure requirements, planning reproduction</div>
   </div>
   <div class="phase-content">
@@ -784,7 +784,7 @@ html, body {
 <!-- Phase 3: Environment -->
 <div class="phase" id="phase3">
   <div class="phase-banner banner-ai">
-    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> provisions the test environment</div>
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; OpinAI</span> provisions the test environment</div>
     <div class="phase-banner-sub">Provisioning test environment on OpenShift with GPU scheduling</div>
   </div>
   <div class="phase-content">
@@ -795,7 +795,7 @@ html, body {
 <!-- Phase 4: Reproduction -->
 <div class="phase" id="phase4">
   <div class="phase-banner banner-ai">
-    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> reproduces the bug with real infrastructure</div>
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; OpinAI</span> reproduces the bug with real infrastructure</div>
     <div class="phase-banner-sub">Sending requests as two different users to trigger the cache leak</div>
   </div>
   <div class="phase-content">
@@ -822,13 +822,13 @@ html, body {
 <!-- Phase 5: Report -->
 <div class="phase" id="phase5">
   <div class="phase-banner banner-ai">
-    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; ReproBot</span> reports evidence and tracks the fix</div>
+    <div class="phase-banner-title"><span class="phase-banner-actor-ai">&#129302; OpinAI</span> reports evidence and tracks the fix</div>
     <div class="phase-banner-sub">Posting structured evidence to GitHub, tracking regression, and validating the fix</div>
   </div>
   <div class="phase-content" style="align-items: flex-start; padding-top: 16px;">
   <div class="report-container" style="margin: 0 auto;">
     <div class="report-comment" id="report-comment">
-      <div class="report-comment-header">&#128300; ReproBot &mdash; Automated Bug Reproduction</div>
+      <div class="report-comment-header">&#128300; OpinAI &mdash; Automated Bug Reproduction</div>
       <div>
         <strong>Status:</strong> &#128308; Bug Confirmed<br>
         <strong>Evidence:</strong> Cache hit (similarity=0.92) returned User A's response to User B without user_id isolation<br>
@@ -1265,7 +1265,7 @@ html, body {
 
     const lines = [
       { ts: '15:04:01', text: 'Analyzing issue #1448 infrastructure requirements...', delay: 840 },
-      { ts: '15:04:02', text: 'Creating OpenShift namespace reprobot-bug-1448...', delay: 840 },
+      { ts: '15:04:02', text: 'Creating OpenShift namespace opinai-bug-1448...', delay: 840 },
       { ts: '15:04:03', text: 'Deploying VSR Router via Deployment (1 replica)', dots: true, result: '\u2705', delay: 960 },
       { ts: '15:04:04', text: 'Deploying Envoy Gateway (Gateway API + BBR plugins)', dots: true, result: '\u2705', delay: 960 },
       { ts: '15:04:05', text: 'Scheduling GPU pod via NVIDIA GPU Operator', dots: true, result: '\u2705 (RTX 4090)', delay: 1200 },
